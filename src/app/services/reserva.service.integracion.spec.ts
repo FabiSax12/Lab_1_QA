@@ -316,31 +316,176 @@ describe("ReservaService", () => {
      * implementarlo es mediante variables externas compartidas o propiedades del propio objeto.
      */
     describe("Verificación de interacciones con Spies", () => {
+        const flyStub: IVueloService = {
+            obtenerAsientosDisponibles() {
+                return 10;
+            },
+            actualizarAsientosOcupados() {
+                return true;
+            },
+            buscarPorId() {
+                return createFly()
+            },
+        } as any
+        const passengerStub: IPasajeroService = {
+            validarPasajero() {
+                return { errores: [], valido: true }
+            },
+            verificarDocumentos() {
+                return { aprobado: true, razon: "" }
+            },
+            calcularCategoria() {
+                return "adulto"
+            },
+        } as any
+        const priceStub: IPrecioService = {
+            calcularPrecioGrupal() {
+                return {
+                    cargoClase: 0,
+                    cargoOpciones: 0,
+                    descuentoCategoria: 0,
+                    descuentoFrecuente: 0,
+                    impuestos: 0,
+                    moneda: "CRC",
+                    precioBase: 100000,
+                    subtotal: 100000,
+                    tasaCambio: 1,
+                    total: 100000,
+                }
+            },
+        } as any
+
         /**
          * Al invocar crearReserva(42, [pasajero], opciones), el spy de buscarPorId debe haber
          * recibido exactamente una llamada con argumento 42.
          */
-        it("debe llamar a buscarPorId con el id del vuelo", () => { });
+        it("debe llamar a buscarPorId con el id del vuelo", () => {
+            const calls: number[] = [];
+            const flySpy: IVueloService = {
+                ...flyStub,
+                buscarPorId(id) {
+                    calls.push(id);
+                    return createFly();
+                },
+            };
+
+            const service = new ReservaService(
+                flySpy as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            service.crearReserva(42, [createPassenger()], createOptions());
+
+            expect(calls.length).toBe(1);
+            expect(calls[0]).toBe(42);
+        });
 
         /**
          * Al reservar con tres pasajeros distintos, el spy de validarPasajero debe haber recibido
          * exactamente tres llamadas.
          */
-        it("debe llamar a validarPasajero una vez por cada pasajero", () => { });
+        it("debe llamar a validarPasajero una vez por cada pasajero", () => {
+            let count = 0;
+            const passengerSpy: IPasajeroService = {
+                ...passengerStub,
+                validarPasajero(pasajero) {
+                    count++;
+                    return { valido: true, errores: [] };
+                },
+            };
+
+            const service = new ReservaService(
+                flyStub as unknown as VueloService,
+                passengerSpy as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            const passengers = [
+                createPassenger({ id: 1 }),
+                createPassenger({ id: 2 }),
+                createPassenger({ id: 3 }),
+            ];
+
+            service.crearReserva(1, passengers, createOptions());
+
+            expect(count).toBe(3);
+        });
 
         /**
          * Al reservar con dos pasajeros, el spy de actualizarAsientosOcupados debe registrar una
          * invocación con el vueloId correcto y el valor 2 como delta positivo. Si la prueba descubre
          * un comportamiento distinto, se documenta como hallazgo.
          */
-        it("debe llamar a actualizarAsientosOcupados con vueloId y delta correctos", () => { });
+        it("debe llamar a actualizarAsientosOcupados con vueloId y delta correctos", () => {
+            const calls: Array<{ vueloId: number; delta: number }> = [];
+            const flySpy: IVueloService = {
+                ...flyStub,
+                actualizarAsientosOcupados(vueloId, cantidad) {
+                    calls.push({ vueloId, delta: cantidad });
+                    return true;
+                },
+            };
+
+            const service = new ReservaService(
+                flySpy as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            const passengers = [
+                createPassenger({ id: 1 }),
+                createPassenger({ id: 2 }),
+            ];
+
+            service.crearReserva(1, passengers, createOptions());
+
+            expect(calls.length).toBe(1);
+            expect(calls[0].vueloId).toBe(1);
+            expect(calls[0].delta).toBe(2);
+        });
 
         /**
          * Usando un arreglo compartido donde cada spy registra el nombre del método al ser
          * invocado, verificar que validarPasajero se ejecuta antes que verificarDocumentos y que
          * ambos preceden a calcularPrecioGrupal.
          */
-        it("debe ejecutar validarPasajero antes que verificarDocumentos y ambos antes que calcularPrecioGrupal", () => { });
+        it("debe ejecutar validarPasajero antes que verificarDocumentos y ambos antes que calcularPrecioGrupal", () => {
+            const callOrder: string[] = [];
+
+            const passengerSpy: IPasajeroService = {
+                ...passengerStub,
+                validarPasajero(pasajero) {
+                    callOrder.push("validarPasajero");
+                    return { valido: true, errores: [] };
+                },
+                verificarDocumentos(pasajero, paisDestino) {
+                    callOrder.push("verificarDocumentos");
+                    return { aprobado: true, razon: "" };
+                },
+            };
+
+            const priceSpy: IPrecioService = {
+                ...priceStub,
+                calcularPrecioGrupal(vuelo, pasajeros, opciones) {
+                    callOrder.push("calcularPrecioGrupal");
+                    return priceStub.calcularPrecioGrupal(vuelo, pasajeros, opciones);
+                },
+            };
+
+            const service = new ReservaService(
+                flyStub as unknown as VueloService,
+                passengerSpy as unknown as PasajeroService,
+                priceSpy as unknown as PrecioService,
+            );
+
+            service.crearReserva(1, [createPassenger()], createOptions());
+
+            expect(callOrder.length).toBe(3)
+            expect(callOrder.at(0)).toBe("validarPasajero")
+            expect(callOrder.at(1)).toBe("verificarDocumentos")
+            expect(callOrder.at(2)).toBe("calcularPrecioGrupal")
+        });
     });
 
     /**
