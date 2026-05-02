@@ -1,3 +1,9 @@
+import { OpcionesReserva } from "../models/vuelo.model";
+import { PasajeroService } from "./pasajero.service";
+import { PrecioService } from "./precio.service";
+import { ReservaService } from "./reserva.service";
+import { VueloService } from "./vuelo.service";
+
 describe("ReservaService", () => {
 
     /**
@@ -6,12 +12,42 @@ describe("ReservaService", () => {
      * Una implementación compacta utiliza Proxy.
      */
     describe("Validaciones de entrada con Dummies", () => {
+
+        function strictDummy<T>(name: string): T {
+            return new Proxy({}, {
+                get: () => () => { throw new Error(`Dummy ${name} has been invoked`) }
+            }) as T
+        }
+
+        const flyDouble = strictDummy<VueloService>("VueloService");
+        const passengerDouble = strictDummy<PasajeroService>("PasajeroService");
+        const priceDouble = strictDummy<PrecioService>("PrecioService");
+
+        const service = new ReservaService(
+            flyDouble,
+            passengerDouble,
+            priceDouble,
+        );
+
         /**
          * Invocar crearReserva(1, [], opciones). El resultado debe tener exito en false y el error
          * debe contener "al menos 1 pasajero". La validación 1 corta antes de llegar a los
          * colaboradores.
          */
-        it("debe rechazar reservas sin pasajeros", () => { });
+        it("debe rechazar reservas sin pasajeros", () => {
+            const options: OpcionesReserva = {
+                comidaEspecial: "Cantonés",
+                equipajeExtra: false,
+                prioridadAbordaje: false,
+                seguroViaje: false,
+                seleccionAsiento: false
+            }
+
+            const result = service.crearReserva(1, [], options)
+
+            expect(result.exito).toBeFalse()
+            expect(result.error).toContain("al menos 1 pasajero")
+        });
 
         /**
          * Invocar crearReserva(1, arregloDe10Pasajeros, opciones). El resultado debe tener exito
