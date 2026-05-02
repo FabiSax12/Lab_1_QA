@@ -497,7 +497,7 @@ describe("ReservaService", () => {
     describe("Integridad de estado con Fakes", () => {
 
         /**
-         * Factorías de falsos completos. Cada uno implementa la interfaz entera
+         * Clases Fakes completas. Cada uno implementa la interfaz entera
          * de su colaborador y mantiene estado interno cuando corresponde, de modo
          * que varias operaciones sobre la misma instancia observan los efectos
          * acumulados.
