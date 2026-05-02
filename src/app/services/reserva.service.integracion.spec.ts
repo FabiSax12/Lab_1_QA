@@ -8,6 +8,64 @@ import { PrecioService } from "./precio.service";
 import { ReservaService } from "./reserva.service";
 import { VueloService } from "./vuelo.service";
 
+// Templates para evitar escribir objetos grandes constantemente
+function createFly(overrides: Partial<Vuelo> = {}): Vuelo {
+    return {
+        id: 144,
+        aerolinea: "Avianca",
+        asientosOcupados: 5,
+        asientosTotales: 10,
+        clase: "economica",
+        codigo: "AV-1234",
+        destino: "Aeropuerto Juan Santamaria",
+        duracionMinutos: 240,
+        equipajeIncluidoKg: 50,
+        escalas: [],
+        estado: "programado",
+        fechaLlegada: new Date(Date.now() + 28 * 60 * 60 * 1000),
+        fechaSalida: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        origen: "Panama Airport",
+        paisDestino: "Panama",
+        paisOrigen: "Costa Rica",
+        precioBase: 100000,
+        tieneComida: true,
+        tieneWifi: false,
+        ...overrides,
+    };
+}
+
+function createPassenger(overrides: Partial<Pasajero> = {}): Pasajero {
+    return {
+        id: 1,
+        nombre: "Test",
+        apellido: "User",
+        pasaporte: "AB1234567",
+        nacionalidad: "CR",
+        fechaNacimiento: new Date("1990-01-01"),
+        email: "test@test.com",
+        telefono: "+50612345678",
+        genero: "M",
+        miembroFrecuente: false,
+        nivelFrecuente: "ninguno",
+        millasAcumuladas: 0,
+        necesidadesEspeciales: [],
+        visasVigentes: [],
+        contactoEmergencia: { nombre: "Emergency", telefono: "+50687654321", relacion: "Padre" },
+        ...overrides,
+    };
+}
+
+function createOptions(overrides: Partial<OpcionesReserva> = {}): OpcionesReserva {
+    return {
+        equipajeExtra: false,
+        seleccionAsiento: false,
+        seguroViaje: false,
+        comidaEspecial: null,
+        prioridadAbordaje: false,
+        ...overrides,
+    };
+}
+
 describe("ReservaService", () => {
 
     /**
@@ -17,10 +75,12 @@ describe("ReservaService", () => {
      */
     describe("Validaciones de entrada con Dummies", () => {
 
+        // Lógica para Dummies
+
         function strictDummy<T>(name: string): T {
             return new Proxy({}, {
                 get: () => () => { throw new Error(`Dummy ${name} has been invoked`) }
-            }) as T
+            }) as T;
         }
 
         const flyDouble = strictDummy<VueloService>("VueloService");
@@ -33,30 +93,7 @@ describe("ReservaService", () => {
             priceDouble,
         );
 
-        const dummyOptions: OpcionesReserva = {
-            equipajeExtra: false,
-            seleccionAsiento: false,
-            seguroViaje: false,
-            comidaEspecial: null,
-            prioridadAbordaje: false,
-        };
-        const dummyPassenger: Pasajero = {
-            id: 1,
-            nombre: "Test",
-            apellido: "User",
-            pasaporte: "AB1234567",
-            nacionalidad: "CR",
-            fechaNacimiento: new Date("1990-01-01"),
-            email: "test@test.com",
-            telefono: "+50612345678",
-            genero: "M",
-            miembroFrecuente: false,
-            nivelFrecuente: "ninguno",
-            millasAcumuladas: 0,
-            necesidadesEspeciales: [],
-            visasVigentes: [],
-            contactoEmergencia: { nombre: "Emergency", telefono: "+50687654321", relacion: "Padre" },
-        };
+        const options = createOptions();
 
         /**
          * Invocar crearReserva(1, [], opciones). El resultado debe tener exito en false y el error
@@ -64,10 +101,10 @@ describe("ReservaService", () => {
          * colaboradores.
          */
         it("debe rechazar reservas sin pasajeros", () => {
-            const result = service.crearReserva(1, [], dummyOptions)
+            const result = service.crearReserva(1, [], options);
 
-            expect(result.exito).toBeFalse()
-            expect(result.error).toContain("al menos 1 pasajero")
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("al menos 1 pasajero");
         });
 
         /**
@@ -76,12 +113,14 @@ describe("ReservaService", () => {
          * los colaboradores sean invocados.
          */
         it("debe rechazar reservas con más de 9 pasajeros", () => {
-            const passengers: Pasajero[] = new Array(10).fill(dummyPassenger)
+            const passengers: Pasajero[] = Array.from({ length: 10 }, (_, i) =>
+                createPassenger({ id: i + 1 })
+            );
 
-            const result = service.crearReserva(1, passengers, dummyOptions)
+            const result = service.crearReserva(1, passengers, options);
 
-            expect(result.exito).toBeFalse()
-            expect(result.error).toContain("más de 9 pasajeros")
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("más de 9 pasajeros");
         });
     });
 
@@ -92,115 +131,64 @@ describe("ReservaService", () => {
      */
     describe("Comportamiento con Stubs", () => {
 
-        const validFly: Vuelo = {
-            aerolinea: "Avianca",
-            asientosOcupados: 5,
-            asientosTotales: 10,
-            clase: "economica",
-            codigo: "1234",
-            destino: "Aeropuerto Juan Santamaria",
-            duracionMinutos: 240,
-            equipajeIncluidoKg: 50,
-            escalas: [],
-            estado: "programado",
-            fechaLlegada: new Date(new Date().getTime() + 28 * 60 * 60 * 1000),
-            fechaSalida: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
-            id: Date.now(),
-            origen: "Panama Airport",
-            paisDestino: "Panama",
-            paisOrigen: "Costa Rica",
-            precioBase: 100000,
-            tieneComida: true,
-            tieneWifi: false
-        }
-
-        const validPassenger: Pasajero = {
-            id: 1,
-            nombre: "Test",
-            apellido: "User",
-            pasaporte: "AB1234567",
-            nacionalidad: "CR",
-            fechaNacimiento: new Date("1990-01-01"),
-            email: "test@test.com",
-            telefono: "+50612345678",
-            genero: "M",
-            miembroFrecuente: false,
-            nivelFrecuente: "ninguno",
-            millasAcumuladas: 0,
-            necesidadesEspeciales: [],
-            visasVigentes: [],
-            contactoEmergencia: { nombre: "Emergency", telefono: "+50687654321", relacion: "Padre" },
-        }
-
-        const options: OpcionesReserva = {
-            equipajeExtra: false,
-            seleccionAsiento: false,
-            seguroViaje: false,
-            comidaEspecial: null,
-            prioridadAbordaje: false,
-        }
-
         const flyStub: IVueloService = {
             actualizarAsientosOcupados(vueloId, cantidad) {
                 return true;
             },
 
             buscarPorId(id) {
-                return validFly;
+                return createFly();
             },
 
+            /** El comentario ahora coincide con el valor retornado. */
             obtenerAsientosDisponibles(vueloId) {
-                return 1;
+                return 10;
             },
 
             buscarVuelos(origen, destino, fecha) {
-                throw new Error("Method not implemented yet");
+                throw new Error("no llamado");
             },
 
             obtenerEstadoVuelo(vueloId) {
-                throw new Error("Method not implemented yet");
+                throw new Error("no llamado");
             },
 
             obtenerTodos() {
-                throw new Error("Method not implemented yet");
+                throw new Error("no llamado");
             },
 
             obtenerVuelosDisponibles() {
-                throw new Error("Method not implemented yet");
+                throw new Error("no llamado");
             },
-        }
+        };
 
         const passengerStub: IPasajeroService = {
             calcularCategoria(fechaNacimiento) {
-                return "adulto"
+                return "adulto";
             },
 
             validarPasajero(pasajero) {
-                return { errores: [], valido: true }
+                return { errores: [], valido: true };
             },
 
             verificarDocumentos(pasajero, paisDestino) {
-                return { aprobado: true, razon: "" }
+                return { aprobado: true, razon: "" };
             },
 
             calcularMillasGanadas(duracionMinutos, clase, nivelFrecuente) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
 
             obtenerBeneficiosFrecuente(pasajero) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
 
             obtenerPorId(id) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
-        }
+        };
 
         const priceStub: IPrecioService = {
-            aplicarDescuentoFrecuente(precio, nivelFrecuente) {
-                throw new Error("Method not implemented yet")
-            },
-
             calcularPrecioGrupal(vuelo, pasajeros, opciones) {
                 return {
                     cargoClase: 0,
@@ -212,28 +200,33 @@ describe("ReservaService", () => {
                     precioBase: 100000,
                     subtotal: 100000,
                     tasaCambio: 1,
-                    total: 100000
-                }
+                    total: 100000,
+                };
+            },
+
+            aplicarDescuentoFrecuente(precio, nivelFrecuente) {
+                throw new Error("no llamado");
             },
 
             calcularImpuestos(subtotal, paisOrigen, paisDestino) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
 
             calcularPrecioIndividual(vuelo, pasajero, opciones) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
 
             convertirMoneda(monto, monedaDestino) {
-                throw new Error("Method not implemented yet")
+                throw new Error("no llamado");
             },
-        }
+        };
 
-        const service: ReservaService = new ReservaService(
-            flyStub as any,
-            passengerStub as any,
-            priceStub as any
-        )
+        const newService = () =>
+            new ReservaService(
+                flyStub as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
 
         /**
          * Camino feliz: vuelo programado con fechaSalida futura y clase económica, diez asientos
@@ -242,30 +235,80 @@ describe("ReservaService", () => {
          * que coincida con la expresión regular /^SKY-[A-Z0-9]{6}$/.
          */
         it("debe crear reserva pendiente en el camino feliz", () => {
-            const result = service.crearReserva(1, [validPassenger], options)
+            const service = newService();
+            const result = service.crearReserva(1, [createPassenger()], createOptions());
 
-            expect(result.exito).toBeTrue()
-            expect(result.reserva?.estado).toBe('pendiente')
-            expect(result.reserva?.codigoReserva).toMatch(new RegExp(/^SKY-[A-Z0-9]{6}$/))
+            expect(result.exito).toBeTrue();
+            expect(result.reserva?.estado).toBe("pendiente");
+            expect(result.reserva?.codigoReserva).toMatch(/^SKY-[A-Z0-9]{6}$/);
         });
 
         /**
          * Stub de buscarPorId que retorna undefined. El error debe contener "no encontrado" y
          * reserva debe ser null.
          */
-        it("debe rechazar cuando el vuelo no existe", () => { });
+        it("debe rechazar cuando el vuelo no existe", () => {
+            const stub: IVueloService = {
+                ...flyStub,
+                buscarPorId(id) { return undefined; },
+            };
+
+            const service = new ReservaService(
+                stub as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            const result = service.crearReserva(1, [createPassenger()], createOptions());
+
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("no encontrado");
+            expect(result.reserva).toBeNull();
+        });
 
         /**
          * Stub de buscarPorId que retorna un vuelo con estado "cancelado". El error debe
-         * contener "no está disponible".
+         * contener "no está disponible". Demuestra cómo la factory aVuelo recibe overrides
+         * para expresar únicamente el estado que difiere del default.
          */
-        it("debe rechazar cuando el vuelo está cancelado", () => { });
+        it("debe rechazar cuando el vuelo está cancelado", () => {
+            const stub: IVueloService = {
+                ...flyStub,
+                buscarPorId(id) { return createFly({ estado: "cancelado" }); },
+            };
+            const service = new ReservaService(
+                stub as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            const result = service.crearReserva(1, [createPassenger()], createOptions());
+
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("no está disponible");
+        });
 
         /**
          * Stub de obtenerAsientosDisponibles que retorna 1 mientras se intenta reservar para dos
          * pasajeros. El error debe contener "No hay suficientes asientos".
          */
-        it("debe rechazar cuando no hay asientos suficientes", () => { });
+        it("debe rechazar cuando no hay asientos suficientes", () => {
+            const stub: IVueloService = {
+                ...flyStub,
+                obtenerAsientosDisponibles(vueloId) { return 1; },
+            };
+            const service = new ReservaService(
+                stub as unknown as VueloService,
+                passengerStub as unknown as PasajeroService,
+                priceStub as unknown as PrecioService,
+            );
+
+            const passengers = [createPassenger(), createPassenger({ id: 2 })];
+            const result = service.crearReserva(1, passengers, createOptions());
+
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("No hay suficientes asientos");
+        });
     });
 
     /**
