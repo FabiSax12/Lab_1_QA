@@ -1,5 +1,8 @@
-import { Pasajero } from "../models/pasajero.model";
-import { OpcionesReserva } from "../models/vuelo.model";
+import { IPasajeroService } from "../interfaces/ipasajero.service";
+import { IPrecioService } from "../interfaces/iprecio.service";
+import { IVueloService } from "../interfaces/ivuelo.service";
+import { CategoriaPasajero, Pasajero } from "../models/pasajero.model";
+import { OpcionesReserva, Vuelo } from "../models/vuelo.model";
 import { PasajeroService } from "./pasajero.service";
 import { PrecioService } from "./precio.service";
 import { ReservaService } from "./reserva.service";
@@ -88,13 +91,163 @@ describe("ReservaService", () => {
      * inocuos.
      */
     describe("Comportamiento con Stubs", () => {
+
+        const validFly: Vuelo = {
+            aerolinea: "Avianca",
+            asientosOcupados: 5,
+            asientosTotales: 10,
+            clase: "economica",
+            codigo: "1234",
+            destino: "Aeropuerto Juan Santamaria",
+            duracionMinutos: 240,
+            equipajeIncluidoKg: 50,
+            escalas: [],
+            estado: "programado",
+            fechaLlegada: new Date(new Date().getTime() + 28 * 60 * 60 * 1000),
+            fechaSalida: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
+            id: Date.now(),
+            origen: "Panama Airport",
+            paisDestino: "Panama",
+            paisOrigen: "Costa Rica",
+            precioBase: 100000,
+            tieneComida: true,
+            tieneWifi: false
+        }
+
+        const validPassenger: Pasajero = {
+            id: 1,
+            nombre: "Test",
+            apellido: "User",
+            pasaporte: "AB1234567",
+            nacionalidad: "CR",
+            fechaNacimiento: new Date("1990-01-01"),
+            email: "test@test.com",
+            telefono: "+50612345678",
+            genero: "M",
+            miembroFrecuente: false,
+            nivelFrecuente: "ninguno",
+            millasAcumuladas: 0,
+            necesidadesEspeciales: [],
+            visasVigentes: [],
+            contactoEmergencia: { nombre: "Emergency", telefono: "+50687654321", relacion: "Padre" },
+        }
+
+        const options: OpcionesReserva = {
+            equipajeExtra: false,
+            seleccionAsiento: false,
+            seguroViaje: false,
+            comidaEspecial: null,
+            prioridadAbordaje: false,
+        }
+
+        const flyStub: IVueloService = {
+            actualizarAsientosOcupados(vueloId, cantidad) {
+                return true;
+            },
+
+            buscarPorId(id) {
+                return validFly;
+            },
+
+            obtenerAsientosDisponibles(vueloId) {
+                return 1;
+            },
+
+            buscarVuelos(origen, destino, fecha) {
+                throw new Error("Method not implemented yet");
+            },
+
+            obtenerEstadoVuelo(vueloId) {
+                throw new Error("Method not implemented yet");
+            },
+
+            obtenerTodos() {
+                throw new Error("Method not implemented yet");
+            },
+
+            obtenerVuelosDisponibles() {
+                throw new Error("Method not implemented yet");
+            },
+        }
+
+        const passengerStub: IPasajeroService = {
+            calcularCategoria(fechaNacimiento) {
+                return "adulto"
+            },
+
+            validarPasajero(pasajero) {
+                return { errores: [], valido: true }
+            },
+
+            verificarDocumentos(pasajero, paisDestino) {
+                return { aprobado: true, razon: "" }
+            },
+
+            calcularMillasGanadas(duracionMinutos, clase, nivelFrecuente) {
+                throw new Error("Method not implemented yet")
+            },
+
+            obtenerBeneficiosFrecuente(pasajero) {
+                throw new Error("Method not implemented yet")
+            },
+
+            obtenerPorId(id) {
+                throw new Error("Method not implemented yet")
+            },
+        }
+
+        const priceStub: IPrecioService = {
+            aplicarDescuentoFrecuente(precio, nivelFrecuente) {
+                throw new Error("Method not implemented yet")
+            },
+
+            calcularPrecioGrupal(vuelo, pasajeros, opciones) {
+                return {
+                    cargoClase: 0,
+                    cargoOpciones: 0,
+                    descuentoCategoria: 0,
+                    descuentoFrecuente: 0,
+                    impuestos: 0,
+                    moneda: "CRC",
+                    precioBase: 100000,
+                    subtotal: 100000,
+                    tasaCambio: 1,
+                    total: 100000
+                }
+            },
+
+            calcularImpuestos(subtotal, paisOrigen, paisDestino) {
+                throw new Error("Method not implemented yet")
+            },
+
+            calcularPrecioIndividual(vuelo, pasajero, opciones) {
+                throw new Error("Method not implemented yet")
+            },
+
+            convertirMoneda(monto, monedaDestino) {
+                throw new Error("Method not implemented yet")
+            },
+        }
+
+        const service: ReservaService = new ReservaService(
+            flyStub as any,
+            passengerStub as any,
+            priceStub as any
+        )
+
         /**
          * Camino feliz: vuelo programado con fechaSalida futura y clase económica, diez asientos
          * disponibles, validación de pasajero positiva, documentos aprobados y cálculo de precio
          * exitoso. La reserva retornada debe tener estado igual a "pendiente" y un codigoReserva
          * que coincida con la expresión regular /^SKY-[A-Z0-9]{6}$/.
          */
-        it("debe crear reserva pendiente en el camino feliz", () => { });
+        it("debe crear reserva pendiente en el camino feliz", () => {
+            const result = service.crearReserva(1, [validPassenger], options)
+
+            expect(result.exito).toBeTrue()
+            expect(result.reserva?.estado).toBe('pendiente')
+            expect(result.reserva?.codigoReserva).toMatch(new RegExp(/^SKY-[A-Z0-9]{6}$/))
+        });
 
         /**
          * Stub de buscarPorId que retorna undefined. El error debe contener "no encontrado" y
