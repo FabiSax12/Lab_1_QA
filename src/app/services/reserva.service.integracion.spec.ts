@@ -502,48 +502,6 @@ describe("ReservaService", () => {
          * que varias operaciones sobre la misma instancia observan los efectos
          * acumulados.
          */
-
-        function createPassengerFake(): IPasajeroService {
-            return {
-                validarPasajero() {
-                    return { valido: true, errores: [] as string[] };
-                },
-                verificarDocumentos() {
-                    return { aprobado: true, razon: "" };
-                },
-                calcularCategoria() {
-                    return "adulto" as CategoriaPasajero;
-                },
-                obtenerPorId() { return undefined; },
-                calcularMillasGanadas() { return 0; },
-                obtenerBeneficiosFrecuente() {
-                    return { descuento: 0, equipajeExtra: 0, salaVip: false, prioridadAbordaje: false };
-                },
-            };
-        }
-
-        function createPriceFake(): IPrecioService {
-            return {
-                calcularPrecioGrupal() {
-                    return {
-                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
-                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
-                        precioBase: 100000, subtotal: 100000, tasaCambio: 1, total: 100000,
-                    };
-                },
-                calcularImpuestos() { return 0; },
-                aplicarDescuentoFrecuente() { return 0; },
-                calcularPrecioIndividual() {
-                    return {
-                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
-                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
-                        precioBase: 0, subtotal: 0, tasaCambio: 1, total: 0,
-                    };
-                },
-                convertirMoneda() { return 0; },
-            };
-        }
-
         class FakeVueloService implements IVueloService {
             private vuelos = new Map<number, Vuelo>();
 
@@ -575,29 +533,78 @@ describe("ReservaService", () => {
             obtenerEstadoVuelo(): string { return "programado"; }
         }
 
+        class FakePasajeroService implements IPasajeroService {
+            validarPasajero(pasajero: Pasajero) {
+                const regex = /^[A-Z]{2}\d{7}$/;
+                if (!regex.test(pasajero.pasaporte)) {
+                    return { valido: false, errores: ["Formato de pasaporte inválido"] };
+                }
+                return { valido: true, errores: [] };
+            }
+            verificarDocumentos() {
+                return { aprobado: true, razon: "" };
+            }
+            calcularCategoria() {
+                return "adulto" as CategoriaPasajero;
+            }
+            obtenerPorId() { return undefined; }
+            calcularMillasGanadas() { return 0; }
+            obtenerBeneficiosFrecuente() {
+                return { descuento: 0, equipajeExtra: 0, salaVip: false, prioridadAbordaje: false };
+            }
+        };
+
+        function createPriceFake(): IPrecioService {
+            return {
+                calcularPrecioGrupal() {
+                    return {
+                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
+                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
+                        precioBase: 100000, subtotal: 100000, tasaCambio: 1, total: 100000,
+                    };
+                },
+                calcularImpuestos() { return 0; },
+                aplicarDescuentoFrecuente() { return 0; },
+                calcularPrecioIndividual() {
+                    return {
+                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
+                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
+                        precioBase: 0, subtotal: 0, tasaCambio: 1, total: 0,
+                    };
+                },
+                convertirMoneda() { return 0; },
+            };
+        }
+
         /**
          * Precargar un vuelo con asientosTotales 10 y asientosOcupados 5. Tras crearReserva
          * con dos pasajeros válidos, obtenerAsientosDisponibles debe retornar 3.
          */
         it("debe reducir los asientos disponibles al reservar", () => {
             const vuelo = createFly({ asientosTotales: 10, asientosOcupados: 5 });
-            const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+
+            const fakeFlyService = new FakeVueloService([{ ...vuelo }]);
+            const fakePassengerService = new FakePasajeroService();
+
             const service = new ReservaService(
-                fakeVuelo as unknown as VueloService,
-                createPassengerFake() as unknown as PasajeroService,
+                fakeFlyService as unknown as VueloService,
+                fakePassengerService as unknown as PasajeroService,
                 createPriceFake() as unknown as PrecioService,
             );
 
-            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(5);
+            expect(fakeFlyService.obtenerAsientosDisponibles(vuelo.id)).toBe(5);
 
             const result = service.crearReserva(
                 vuelo.id,
-                [createPassenger(), createPassenger({ id: 2 })],
+                [
+                    createPassenger(),
+                    createPassenger({ id: 2 })
+                ],
                 createOptions(),
             );
 
             expect(result.exito).toBeTrue();
-            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(3);
+            expect(fakeFlyService.obtenerAsientosDisponibles(vuelo.id)).toBe(3);
         });
 
         /**
@@ -608,10 +615,13 @@ describe("ReservaService", () => {
          */
         it("debe liberar asientos al cancelar una reserva", () => {
             const vuelo = createFly({ asientosTotales: 10, asientosOcupados: 5 });
+
             const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+            const fakePassengerService = new FakePasajeroService();
+
             const service = new ReservaService(
                 fakeVuelo as unknown as VueloService,
-                createPassengerFake() as unknown as PasajeroService,
+                fakePassengerService as unknown as PasajeroService,
                 createPriceFake() as unknown as PrecioService,
             );
 
@@ -637,10 +647,13 @@ describe("ReservaService", () => {
          */
         it("debe rechazar cuando no hay asientos libres tras reservas previas", () => {
             const vuelo = createFly({ asientosTotales: 4, asientosOcupados: 2 });
+
             const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+            const fakePassengerService = new FakePasajeroService();
+
             const service = new ReservaService(
                 fakeVuelo as unknown as VueloService,
-                createPassengerFake() as unknown as PasajeroService,
+                fakePassengerService as unknown as PasajeroService,
                 createPriceFake() as unknown as PrecioService,
             );
 
@@ -668,27 +681,6 @@ describe("ReservaService", () => {
          * el resultado debe tener exito en false y el error debe contener "pasaporte".
          */
         it("debe rechazar pasajeros con pasaporte inválido", () => {
-            class FakePasajeroService implements IPasajeroService {
-                validarPasajero(pasajero: Pasajero) {
-                    const regex = /^[A-Z]{2}\d{7}$/;
-                    if (!regex.test(pasajero.pasaporte)) {
-                        return { valido: false, errores: ["Formato de pasaporte inválido"] };
-                    }
-                    return { valido: true, errores: [] };
-                }
-                verificarDocumentos() {
-                    return { aprobado: true, razon: "" };
-                }
-                calcularCategoria() {
-                    return "adulto" as CategoriaPasajero;
-                }
-                obtenerPorId() { return undefined; }
-                calcularMillasGanadas() { return 0; }
-                obtenerBeneficiosFrecuente() {
-                    return { descuento: 0, equipajeExtra: 0, salaVip: false, prioridadAbordaje: false };
-                }
-            };
-
             const service = new ReservaService(
                 new FakeVueloService([createFly()]) as unknown as VueloService,
                 new FakePasajeroService() as unknown as PasajeroService,
