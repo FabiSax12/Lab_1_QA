@@ -495,32 +495,215 @@ describe("ReservaService", () => {
      * observan los efectos acumulados.
      */
     describe("Integridad de estado con Fakes", () => {
+
+        /**
+         * Factorías de falsos completos. Cada uno implementa la interfaz entera
+         * de su colaborador y mantiene estado interno cuando corresponde, de modo
+         * que varias operaciones sobre la misma instancia observan los efectos
+         * acumulados.
+         */
+
+        function createPassengerFake(): IPasajeroService {
+            return {
+                validarPasajero() {
+                    return { valido: true, errores: [] as string[] };
+                },
+                verificarDocumentos() {
+                    return { aprobado: true, razon: "" };
+                },
+                calcularCategoria() {
+                    return "adulto" as CategoriaPasajero;
+                },
+                obtenerPorId() { return undefined; },
+                calcularMillasGanadas() { return 0; },
+                obtenerBeneficiosFrecuente() {
+                    return { descuento: 0, equipajeExtra: 0, salaVip: false, prioridadAbordaje: false };
+                },
+            };
+        }
+
+        function createPriceFake(): IPrecioService {
+            return {
+                calcularPrecioGrupal() {
+                    return {
+                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
+                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
+                        precioBase: 100000, subtotal: 100000, tasaCambio: 1, total: 100000,
+                    };
+                },
+                calcularImpuestos() { return 0; },
+                aplicarDescuentoFrecuente() { return 0; },
+                calcularPrecioIndividual() {
+                    return {
+                        cargoClase: 0, cargoOpciones: 0, descuentoCategoria: 0,
+                        descuentoFrecuente: 0, impuestos: 0, moneda: "CRC",
+                        precioBase: 0, subtotal: 0, tasaCambio: 1, total: 0,
+                    };
+                },
+                convertirMoneda() { return 0; },
+            };
+        }
+
+        class FakeVueloService implements IVueloService {
+            private vuelos = new Map<number, Vuelo>();
+
+            constructor(vuelosIniciales: Vuelo[]) {
+                for (const v of vuelosIniciales) {
+                    this.vuelos.set(v.id, v);
+                }
+            }
+
+            buscarPorId(id: number): Vuelo | undefined {
+                return this.vuelos.get(id);
+            }
+
+            obtenerAsientosDisponibles(vueloId: number): number {
+                const v = this.vuelos.get(vueloId);
+                return v ? v.asientosTotales - v.asientosOcupados : 0;
+            }
+
+            actualizarAsientosOcupados(vueloId: number, cantidad: number): boolean {
+                const v = this.vuelos.get(vueloId);
+                if (!v) return false;
+                v.asientosOcupados += cantidad;
+                return true;
+            }
+
+            obtenerTodos(): Vuelo[] { return []; }
+            buscarVuelos(): Vuelo[] { return []; }
+            obtenerVuelosDisponibles(): Vuelo[] { return []; }
+            obtenerEstadoVuelo(): string { return "programado"; }
+        }
+
         /**
          * Precargar un vuelo con asientosTotales 10 y asientosOcupados 5. Tras crearReserva
          * con dos pasajeros válidos, obtenerAsientosDisponibles debe retornar 3.
          */
-        it("debe reducir los asientos disponibles al reservar", () => { });
+        it("debe reducir los asientos disponibles al reservar", () => {
+            const vuelo = createFly({ asientosTotales: 10, asientosOcupados: 5 });
+            const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+            const service = new ReservaService(
+                fakeVuelo as unknown as VueloService,
+                createPassengerFake() as unknown as PasajeroService,
+                createPriceFake() as unknown as PrecioService,
+            );
+
+            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(5);
+
+            const result = service.crearReserva(
+                vuelo.id,
+                [createPassenger(), createPassenger({ id: 2 })],
+                createOptions(),
+            );
+
+            expect(result.exito).toBeTrue();
+            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(3);
+        });
 
         /**
-         * Continuando con el vuelo anterior, cancelar la reserva recién creada. Al consultar de
-         * nuevo, obtenerAsientosDisponibles debe retornar 5, confirmando que el delta negativo
+         * Precargar un vuelo con asientosTotales 10 y asientosOcupados 5, crear una reserva
+         * de dos pasajeros (quedan 3 libres) y luego cancelarla. Al consultar de nuevo,
+         * obtenerAsientosDisponibles debe retornar 5, confirmando que el delta negativo
          * revirtió el estado.
          */
-        it("debe liberar asientos al cancelar una reserva", () => { });
+        it("debe liberar asientos al cancelar una reserva", () => {
+            const vuelo = createFly({ asientosTotales: 10, asientosOcupados: 5 });
+            const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+            const service = new ReservaService(
+                fakeVuelo as unknown as VueloService,
+                createPassengerFake() as unknown as PasajeroService,
+                createPriceFake() as unknown as PrecioService,
+            );
+
+            const result = service.crearReserva(
+                vuelo.id,
+                [createPassenger(), createPassenger({ id: 2 })],
+                createOptions(),
+            );
+            expect(result.exito).toBeTrue();
+            expect(result.reserva).not.toBeNull();
+            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(3);
+
+            const cancelResult = service.cancelarReserva(result.reserva!.id);
+
+            expect(cancelResult.cancelada).toBeTrue();
+            expect(fakeVuelo.obtenerAsientosDisponibles(vuelo.id)).toBe(5);
+        });
 
         /**
          * Precargar un vuelo con asientosTotales 4 y asientosOcupados 2. Una primera reserva
          * de dos pasajeros tiene éxito. Una segunda reserva de dos pasajeros falla con error que
          * contiene "No hay suficientes asientos".
          */
-        it("debe rechazar cuando no hay asientos libres tras reservas previas", () => { });
+        it("debe rechazar cuando no hay asientos libres tras reservas previas", () => {
+            const vuelo = createFly({ asientosTotales: 4, asientosOcupados: 2 });
+            const fakeVuelo = new FakeVueloService([{ ...vuelo }]);
+            const service = new ReservaService(
+                fakeVuelo as unknown as VueloService,
+                createPassengerFake() as unknown as PasajeroService,
+                createPriceFake() as unknown as PrecioService,
+            );
+
+            const primera = service.crearReserva(
+                vuelo.id,
+                [createPassenger(), createPassenger({ id: 2 })],
+                createOptions(),
+            );
+
+            expect(primera.exito).toBeTrue();
+
+            const segunda = service.crearReserva(
+                vuelo.id,
+                [createPassenger({ id: 3 }), createPassenger({ id: 4 })],
+                createOptions(),
+            );
+
+            expect(segunda.exito).toBeFalse();
+            expect(segunda.error).toContain("No hay suficientes asientos");
+        });
 
         /**
          * Construir un FakePasajeroService que aplica la expresión regular /^[A-Z]{2}\d{7}$/ en
          * validarPasajero. Al invocar crearReserva con un pasajero cuyo pasaporte es "ABC123",
          * el resultado debe tener exito en false y el error debe contener "pasaporte".
          */
-        it("debe rechazar pasajeros con pasaporte inválido", () => { });
+        it("debe rechazar pasajeros con pasaporte inválido", () => {
+            class FakePasajeroService implements IPasajeroService {
+                validarPasajero(pasajero: Pasajero) {
+                    const regex = /^[A-Z]{2}\d{7}$/;
+                    if (!regex.test(pasajero.pasaporte)) {
+                        return { valido: false, errores: ["Formato de pasaporte inválido"] };
+                    }
+                    return { valido: true, errores: [] };
+                }
+                verificarDocumentos() {
+                    return { aprobado: true, razon: "" };
+                }
+                calcularCategoria() {
+                    return "adulto" as CategoriaPasajero;
+                }
+                obtenerPorId() { return undefined; }
+                calcularMillasGanadas() { return 0; }
+                obtenerBeneficiosFrecuente() {
+                    return { descuento: 0, equipajeExtra: 0, salaVip: false, prioridadAbordaje: false };
+                }
+            };
+
+            const service = new ReservaService(
+                new FakeVueloService([createFly()]) as unknown as VueloService,
+                new FakePasajeroService() as unknown as PasajeroService,
+                createPriceFake() as unknown as PrecioService,
+            );
+
+            const result = service.crearReserva(
+                144,
+                [createPassenger({ pasaporte: "ABC123" })],
+                createOptions(),
+            );
+
+            expect(result.exito).toBeFalse();
+            expect(result.error).toContain("pasaporte");
+        });
     });
 
 });
