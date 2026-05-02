@@ -1,3 +1,4 @@
+import { Pasajero } from "../models/pasajero.model";
 import { OpcionesReserva } from "../models/vuelo.model";
 import { PasajeroService } from "./pasajero.service";
 import { PrecioService } from "./precio.service";
@@ -29,21 +30,38 @@ describe("ReservaService", () => {
             priceDouble,
         );
 
+        const dummyOptions: OpcionesReserva = {
+            equipajeExtra: false,
+            seleccionAsiento: false,
+            seguroViaje: false,
+            comidaEspecial: null,
+            prioridadAbordaje: false,
+        };
+        const dummyPassenger: Pasajero = {
+            id: 1,
+            nombre: "Test",
+            apellido: "User",
+            pasaporte: "AB1234567",
+            nacionalidad: "CR",
+            fechaNacimiento: new Date("1990-01-01"),
+            email: "test@test.com",
+            telefono: "+50612345678",
+            genero: "M",
+            miembroFrecuente: false,
+            nivelFrecuente: "ninguno",
+            millasAcumuladas: 0,
+            necesidadesEspeciales: [],
+            visasVigentes: [],
+            contactoEmergencia: { nombre: "Emergency", telefono: "+50687654321", relacion: "Padre" },
+        };
+
         /**
          * Invocar crearReserva(1, [], opciones). El resultado debe tener exito en false y el error
          * debe contener "al menos 1 pasajero". La validación 1 corta antes de llegar a los
          * colaboradores.
          */
         it("debe rechazar reservas sin pasajeros", () => {
-            const options: OpcionesReserva = {
-                comidaEspecial: "Cantonés",
-                equipajeExtra: false,
-                prioridadAbordaje: false,
-                seguroViaje: false,
-                seleccionAsiento: false
-            }
-
-            const result = service.crearReserva(1, [], options)
+            const result = service.crearReserva(1, [], dummyOptions)
 
             expect(result.exito).toBeFalse()
             expect(result.error).toContain("al menos 1 pasajero")
@@ -54,7 +72,14 @@ describe("ReservaService", () => {
          * en false y el error debe contener "más de 9 pasajeros". La validación 2 corta antes que
          * los colaboradores sean invocados.
          */
-        it("debe rechazar reservas con más de 9 pasajeros", () => { });
+        it("debe rechazar reservas con más de 9 pasajeros", () => {
+            const passengers: Pasajero[] = new Array(10).fill(dummyPassenger)
+
+            const result = service.crearReserva(1, passengers, dummyOptions)
+
+            expect(result.exito).toBeFalse()
+            expect(result.error).toContain("más de 9 pasajeros")
+        });
     });
 
     /**
