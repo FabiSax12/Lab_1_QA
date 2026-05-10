@@ -20,11 +20,13 @@
       </mat-card-header>
       <mat-card-content>
         <div class="vuelo-details">
-          <div class="detail"><mat-icon>calendar_today</mat-icon> {{ vuelo.fechaSalida | date:'dd/MM/yyyy HH:mm' }}</div>
+          <div class="detail"><mat-icon>calendar_today</mat-icon> {{ vuelo.fechaSalida | date:'dd/MM/yyyy HH:mm' }}
+          </div>
           <div class="detail"><mat-icon>schedule</mat-icon> {{ formatearDuracion(vuelo.duracionMinutos) }}</div>
           <div class="detail"><mat-icon>airline_seat_recline_normal</mat-icon> {{ vuelo.clase | titlecase }}</div>
           <div class="detail"><mat-icon>attach_money</mat-icon> ${{ vuelo.precioBase }} USD (base)</div>
-          <div class="detail"><mat-icon>event_seat</mat-icon> {{ vuelo.asientosTotales - vuelo.asientosOcupados }} asientos disponibles</div>
+          <div class="detail"><mat-icon>event_seat</mat-icon> {{ vuelo.asientosTotales - vuelo.asientosOcupados }}
+            asientos disponibles</div>
         </div>
       </mat-card-content>
     </mat-card>
@@ -37,10 +39,8 @@
       </mat-card-header>
       <mat-card-content>
         <div class="pasajeros-grid">
-          <mat-card *ngFor="let p of pasajerosDisponibles"
-                    class="pasajero-item"
-                    [class.selected]="isPasajeroSeleccionado(p.id)"
-                    (click)="togglePasajero(p.id)">
+          <mat-card *ngFor="let p of pasajerosDisponibles" class="pasajero-item"
+            [class.selected]="isPasajeroSeleccionado(p.id)" (click)="togglePasajero(p.id)" id="pasajero-{id}">
             <div class="pasajero-info">
               <mat-icon>person</mat-icon>
               <div>
@@ -65,16 +65,18 @@
       </mat-card-header>
       <mat-card-content>
         <div class="opciones-grid">
-          <mat-checkbox [(ngModel)]="opciones.equipajeExtra" (change)="actualizarPrecio()">
+          <mat-checkbox id="opcion-equipajeExtra" [(ngModel)]="opciones.equipajeExtra" (change)="actualizarPrecio()">
             <mat-icon>luggage</mat-icon> Equipaje Extra (+$50)
           </mat-checkbox>
-          <mat-checkbox [(ngModel)]="opciones.seleccionAsiento" (change)="actualizarPrecio()">
+          <mat-checkbox id="opcion-seleccionAsiento" [(ngModel)]="opciones.seleccionAsiento"
+            (change)="actualizarPrecio()">
             <mat-icon>event_seat</mat-icon> Selección de Asiento (+$25)
           </mat-checkbox>
-          <mat-checkbox [(ngModel)]="opciones.seguroViaje" (change)="actualizarPrecio()">
+          <mat-checkbox id="opcion-seguroViaje" [(ngModel)]="opciones.seguroViaje" (change)="actualizarPrecio()">
             <mat-icon>security</mat-icon> Seguro de Viaje (+$35)
           </mat-checkbox>
-          <mat-checkbox [(ngModel)]="opciones.prioridadAbordaje" (change)="actualizarPrecio()">
+          <mat-checkbox id="opcion-prioridadAbordaje" [(ngModel)]="opciones.prioridadAbordaje"
+            (change)="actualizarPrecio()">
             <mat-icon>priority_high</mat-icon> Prioridad de Abordaje (+$20)
           </mat-checkbox>
 
@@ -98,9 +100,12 @@
         <div class="precio-desglose">
           <div class="precio-row"><span>Precio Base:</span> <span>${{ precioEstimado.precioBase }}</span></div>
           <div class="precio-row"><span>Cargo por Clase:</span> <span>+${{ precioEstimado.cargoClase }}</span></div>
-          <div class="precio-row descuento"><span>Descuento Categoría:</span> <span>-${{ precioEstimado.descuentoCategoria }}</span></div>
-          <div class="precio-row descuento"><span>Descuento Frecuente:</span> <span>-${{ precioEstimado.descuentoFrecuente }}</span></div>
-          <div class="precio-row"><span>Opciones Adicionales:</span> <span>+${{ precioEstimado.cargoOpciones }}</span></div>
+          <div class="precio-row descuento"><span>Descuento Categoría:</span> <span>-${{
+              precioEstimado.descuentoCategoria }}</span></div>
+          <div class="precio-row descuento"><span>Descuento Frecuente:</span> <span>-${{
+              precioEstimado.descuentoFrecuente }}</span></div>
+          <div class="precio-row"><span>Opciones Adicionales:</span> <span>+${{ precioEstimado.cargoOpciones }}</span>
+          </div>
           <mat-divider></mat-divider>
           <div class="precio-row"><span>Subtotal:</span> <span>${{ precioEstimado.subtotal }}</span></div>
           <div class="precio-row"><span>Impuestos:</span> <span>+${{ precioEstimado.impuestos }}</span></div>
@@ -113,7 +118,7 @@
     <!-- Botón de Reserva -->
     <div class="reserva-actions">
       <button mat-raised-button color="primary" (click)="realizarReserva()"
-              [disabled]="pasajerosSeleccionados.length === 0">
+        [disabled]="pasajerosSeleccionados.length === 0">
         <mat-icon>check</mat-icon>
         Confirmar Reserva ({{ pasajerosSeleccionados.length }} pasajero(s))
       </button>
@@ -123,8 +128,8 @@
     </div>
 
     <!-- Resultado -->
-    <mat-card *ngIf="resultadoReserva" class="resultado-card"
-              [class.exito]="resultadoReserva.exito" [class.error]="!resultadoReserva.exito">
+    <mat-card *ngIf="resultadoReserva" class="resultado-card" [class.exito]="resultadoReserva.exito"
+      [class.error]="!resultadoReserva.exito">
       <mat-card-content>
         <div *ngIf="resultadoReserva.exito" class="resultado-exito">
           <mat-icon>check_circle</mat-icon>

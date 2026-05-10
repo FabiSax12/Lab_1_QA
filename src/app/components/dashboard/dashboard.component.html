@@ -1,11 +1,11 @@
 <div class="dashboard-container">
-  <h1 class="page-title">
+  <h1 id="titulo-dashboard" class="page-title">
     <mat-icon>dashboard</mat-icon>
     Dashboard - SkyRoute
   </h1>
 
   <div class="stats-grid">
-    <mat-card class="stat-card primary">
+    <mat-card id="stat-vuelos" class="stat-card primary">
       <mat-card-content>
         <div class="stat-icon"><mat-icon>flight</mat-icon></div>
         <div class="stat-info">
@@ -99,10 +99,10 @@
   </div>
 
   <div class="actions-bar">
-    <a mat-raised-button color="primary" routerLink="/buscar">
+    <a id="link-buscar" mat-raised-button color="primary" routerLink="/buscar">
       <mat-icon>search</mat-icon> Buscar Vuelos
     </a>
-    <a mat-raised-button color="accent" routerLink="/reservas">
+    <a id="link-reservas" mat-raised-button color="accent" routerLink="/reservas">
       <mat-icon>list_alt</mat-icon> Ver Reservas
     </a>
     <a mat-raised-button routerLink="/pasajeros">

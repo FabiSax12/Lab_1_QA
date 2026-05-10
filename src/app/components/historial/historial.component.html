@@ -1,5 +1,5 @@
 <div class="historial-container">
-  <h1 class="page-title">
+  <h1 id="titulo-historial" class="page-title">
     <mat-icon>list_alt</mat-icon>
     Historial de Reservas
   </h1>
@@ -92,7 +92,8 @@
         </div>
 
         <div class="reserva-acciones" *ngIf="reserva.estado === 'pendiente' || reserva.estado === 'confirmada'">
-          <button mat-raised-button color="primary" *ngIf="reserva.estado === 'pendiente'" (click)="confirmar(reserva.id)">
+          <button mat-raised-button color="primary" *ngIf="reserva.estado === 'pendiente'"
+            (click)="confirmar(reserva.id)">
             <mat-icon>check</mat-icon> Confirmar
           </button>
           <button mat-raised-button color="warn" (click)="cancelar(reserva.id)">

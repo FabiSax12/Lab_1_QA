@@ -9,27 +9,27 @@
       <div class="search-form">
         <mat-form-field appearance="outline">
           <mat-label>Ciudad de Origen</mat-label>
-          <input matInput [(ngModel)]="origen" placeholder="Ej: San José">
+          <input id="input-origen" matInput [(ngModel)]="origen" placeholder="Ej: San José">
           <mat-icon matPrefix>flight_takeoff</mat-icon>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Ciudad de Destino</mat-label>
-          <input matInput [(ngModel)]="destino" placeholder="Ej: Miami">
+          <input id="input-destino" matInput [(ngModel)]="destino" placeholder="Ej: Miami">
           <mat-icon matPrefix>flight_land</mat-icon>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Fecha de Viaje</mat-label>
-          <input matInput type="date" [(ngModel)]="fecha">
+          <input id="input-fecha" matInput type="date" [(ngModel)]="fecha">
           <mat-icon matPrefix>calendar_today</mat-icon>
         </mat-form-field>
 
         <div class="search-actions">
-          <button mat-raised-button color="primary" (click)="buscar()">
+          <button id="btn-buscar" mat-raised-button color="primary" (click)="buscar()">
             <mat-icon>search</mat-icon> Buscar
           </button>
-          <button mat-stroked-button (click)="mostrarTodos()">
+          <button id="btn-todos" mat-stroked-button (click)="mostrarTodos()">
             <mat-icon>list</mat-icon> Ver Todos
           </button>
         </div>
@@ -39,13 +39,13 @@
 
   <div class="results-section" *ngIf="buscado">
     <h2 *ngIf="resultados.length > 0">{{ resultados.length }} vuelo(s) encontrado(s)</h2>
-    <p *ngIf="resultados.length === 0" class="no-results">
+    <p *ngIf="resultados.length === 0" class="no-results" id="msg-sinresultados">
       <mat-icon>flight_takeoff</mat-icon>
       No se encontraron vuelos con los criterios especificados.
     </p>
 
     <div class="vuelos-list">
-      <mat-card *ngFor="let vuelo of resultados" class="vuelo-card">
+      <mat-card *ngFor="let vuelo of resultados" class="vuelo-card" id="vuelo-card-{id}">
         <mat-card-content>
           <div class="vuelo-header">
             <div class="vuelo-codigo">
