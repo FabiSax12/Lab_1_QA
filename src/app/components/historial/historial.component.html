@@ -34,7 +34,7 @@
   </div>
 
   <mat-accordion>
-    <mat-expansion-panel *ngFor="let reserva of reservas" class="reserva-panel">
+    <mat-expansion-panel *ngFor="let reserva of reservas" class="reserva-panel" id="panel-reserva-{{reserva.id}}">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon [style.color]="getEstadoColor(reserva.estado)">

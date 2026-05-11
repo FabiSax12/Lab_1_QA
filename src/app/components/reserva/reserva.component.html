@@ -12,7 +12,7 @@
 
   <div *ngIf="vuelo" class="reserva-content">
     <!-- Info del Vuelo -->
-    <mat-card class="vuelo-info-card">
+    <mat-card class="vuelo-info-card" id="vuelo-info">
       <mat-card-header>
         <mat-icon mat-card-avatar>flight</mat-icon>
         <mat-card-title>{{ vuelo.codigo }} - {{ vuelo.aerolinea }}</mat-card-title>
@@ -40,7 +40,7 @@
       <mat-card-content>
         <div class="pasajeros-grid">
           <mat-card *ngFor="let p of pasajerosDisponibles" class="pasajero-item"
-            [class.selected]="isPasajeroSeleccionado(p.id)" (click)="togglePasajero(p.id)" id="pasajero-{id}">
+            [class.selected]="isPasajeroSeleccionado(p.id)" (click)="togglePasajero(p.id)" id="pasajero-{{p.id}}">
             <div class="pasajero-info">
               <mat-icon>person</mat-icon>
               <div>
@@ -118,7 +118,7 @@
     <!-- Botón de Reserva -->
     <div class="reserva-actions">
       <button mat-raised-button color="primary" (click)="realizarReserva()"
-        [disabled]="pasajerosSeleccionados.length === 0">
+        [disabled]="pasajerosSeleccionados.length === 0" id="btn-confirmar-reserva">
         <mat-icon>check</mat-icon>
         Confirmar Reserva ({{ pasajerosSeleccionados.length }} pasajero(s))
       </button>
@@ -129,7 +129,7 @@
 
     <!-- Resultado -->
     <mat-card *ngIf="resultadoReserva" class="resultado-card" [class.exito]="resultadoReserva.exito"
-      [class.error]="!resultadoReserva.exito">
+      [class.error]="!resultadoReserva.exito" id="resultado-reserva">
       <mat-card-content>
         <div *ngIf="resultadoReserva.exito" class="resultado-exito">
           <mat-icon>check_circle</mat-icon>

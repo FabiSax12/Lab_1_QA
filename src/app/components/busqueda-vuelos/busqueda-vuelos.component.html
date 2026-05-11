@@ -45,7 +45,7 @@
     </p>
 
     <div class="vuelos-list">
-      <mat-card *ngFor="let vuelo of resultados" class="vuelo-card" id="vuelo-card-{id}">
+      <mat-card *ngFor="let vuelo of resultados" class="vuelo-card" id="vuelo-card-{{vuelo.id}}">
         <mat-card-content>
           <div class="vuelo-header">
             <div class="vuelo-codigo">
@@ -102,7 +102,7 @@
           </div>
 
           <div class="vuelo-actions">
-            <a mat-raised-button color="primary" [routerLink]="['/reservar', vuelo.id]">
+            <a id="btn-reservar-{{vuelo.id}}" mat-raised-button color="primary" [routerLink]="['/reservar', vuelo.id]">
               <mat-icon>bookmark_add</mat-icon> Reservar
             </a>
           </div>
