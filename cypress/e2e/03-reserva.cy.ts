@@ -45,9 +45,9 @@ describe("Flujo de reserva", () => {
         navigateToReservas()
 
         cy.get("#titulo-historial").should("be.visible");
-        cy.get('[id^="panel-reserva-"]').should("have.length.at.least", 1);
+        cy.get('[id^="reserva-panel-"]').should("have.length.at.least", 1);
         cy.get("@assignedId").then((assignedId) => {
-            cy.get('[id^="panel-reserva-"]').contains("span", String(assignedId)).should("be.visible")
+            cy.get('[id^="reserva-panel-"]').contains("span", String(assignedId)).should("be.visible")
         })
     });
 

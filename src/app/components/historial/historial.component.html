@@ -34,7 +34,7 @@
   </div>
 
   <mat-accordion>
-    <mat-expansion-panel *ngFor="let reserva of reservas" class="reserva-panel" id="panel-reserva-{{reserva.id}}">
+    <mat-expansion-panel *ngFor="let reserva of reservas" class="reserva-panel" id="reserva-panel-{{reserva.id}}">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon [style.color]="getEstadoColor(reserva.estado)">
@@ -93,10 +93,10 @@
 
         <div class="reserva-acciones" *ngIf="reserva.estado === 'pendiente' || reserva.estado === 'confirmada'">
           <button mat-raised-button color="primary" *ngIf="reserva.estado === 'pendiente'"
-            (click)="confirmar(reserva.id)">
+            id="btn-confirmar-{{reserva.id}}" (click)="confirmar(reserva.id)">
             <mat-icon>check</mat-icon> Confirmar
           </button>
-          <button mat-raised-button color="warn" (click)="cancelar(reserva.id)">
+          <button mat-raised-button color="warn" id="btn-cancelar-{{reserva.id}}" (click)="cancelar(reserva.id)">
             <mat-icon>cancel</mat-icon> Cancelar
           </button>
         </div>
