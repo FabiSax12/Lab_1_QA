@@ -30,7 +30,7 @@ describe("Flujo de reserva", () => {
         cy.get("#vuelo-info").should("contain.text", "SR-1001");
         cy.get("#pasajero-1").click();
 
-        cy.get("#btn-confirmar-reserva").should("contain.text", "Confirmar Reserva").click();
+        cy.get("#btn-confirmar").should("contain.text", "Confirmar Reserva").click();
 
         cy.get("#resultado-reserva.exito").should("be.visible");
         cy.get("#codigo-reserva")
