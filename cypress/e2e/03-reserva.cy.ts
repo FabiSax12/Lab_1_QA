@@ -33,7 +33,7 @@ describe("Flujo de reserva", () => {
         cy.get("#btn-confirmar-reserva").should("contain.text", "Confirmar Reserva").click();
 
         cy.get("#resultado-reserva.exito").should("be.visible");
-        cy.get("#resultado-reserva .resultado-exito strong")
+        cy.get("#codigo-reserva")
             .first()
             .invoke("text")
             .then((codigo) => {
