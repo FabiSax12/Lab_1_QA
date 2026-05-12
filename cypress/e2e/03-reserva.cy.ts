@@ -134,7 +134,7 @@ describe("Flujo de reserva", () => {
         cy.contains("button", "Confirmar Reserva").click();
 
         cy.get(".resultado-card.error").should("be.visible");
-        cy.get(".resultado-error p").should(
+        cy.get("#msg-error").should(
             "contain.text",
             "al menos 1 adulto por cada infante"
         );
@@ -157,7 +157,7 @@ describe("Flujo de reserva", () => {
         cy.contains("button", "Confirmar Reserva").click();
 
         cy.get(".resultado-card.error").should("be.visible");
-        cy.get(".resultado-error p").should("contain.text", "no está disponible");
+        cy.get("#msg-error").should("contain.text", "no está disponible");
     });
 
     /**
