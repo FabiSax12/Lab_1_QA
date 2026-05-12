@@ -11,7 +11,7 @@ describe("Flujo de reserva", () => {
     });
 
     const navigateToReservas = () => {
-        cy.get("#reserva-link").click()
+        cy.get("#link-reservas").click()
         cy.url().should("include", "/reservas")
     }
 
@@ -85,7 +85,7 @@ describe("Flujo de reserva", () => {
                 expect(total).to.be.greaterThan(dobleBase);
             });
 
-        cy.get("#reserva-link").click()
+        cy.get("#link-reservas").click()
         cy.url().should("include", "/reservas")
 
         cy.get(".reserva-panel").first().click();
