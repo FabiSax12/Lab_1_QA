@@ -83,7 +83,12 @@
           <div *ngFor="let cambio of reserva.historialCambios" class="cambio-line">
             <span class="cambio-fecha">{{ cambio.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
             <span class="cambio-tipo">{{ cambio.tipo | uppercase }}</span>
+
+            @if (cambio.tipo === "cancelacion") {
+            <span class="cambio-desc" id="monto-reembolso-{{reserva.id}}">{{ cambio.descripcion }}</span>
+            } @else {
             <span class="cambio-desc">{{ cambio.descripcion }}</span>
+            }
           </div>
         </div>
 
