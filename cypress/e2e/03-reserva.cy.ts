@@ -11,17 +11,16 @@ describe("Flujo de reserva", () => {
     });
 
     const navigateToReservas = () => {
-        cy.get("#link-reservas").click()
+        cy.get("#sidebar-link-reservas").click()
         cy.url().should("include", "/reservas")
     }
 
-    /**
-     * 1. Camino feliz: con cy.clock fijado a 2026-04-14, navegar de búsqueda a reserva del SR1001, seleccionar al pasajero #1 (Carlos), confirmar. La pantalla debe mostrar el código
-        de reserva con formato /^SKY-[A-Z0-9]{6}$/ y el estado "pendiente". Verificar también
-        que la reserva aparece luego en /reservas.
-     */
+    // Caso: 1
+    // Objetivo: Verificar el camino feliz de una reserva completa, desde búsqueda hasta confirmación y aparición en historial.
+    // Datos de entrada: Vuelo SR1001, pasajero #1 (Carlos), sin opciones adicionales.
+    // Resultado esperado: Código con formato SKY-XXXXXX, estado "pendiente", reserva visible en /reservas.
     it("1 - Camino feliz: reserva SR1001 con pasajero Carlos y verificación en historial", () => {
-        cy.visit("buscar")
+        cy.visit("/buscar")
         cy.get("#btn-todos").click()
         cy.get("#vuelo-card-1").find("#btn-reservar-1").click()
 
@@ -32,9 +31,9 @@ describe("Flujo de reserva", () => {
 
         cy.get("#btn-confirmar").should("contain.text", "Confirmar Reserva").click();
 
-        cy.get("#resultado-reserva.exito").should("be.visible");
+        cy.get("#resultado-reserva").should("be.visible");
+        cy.get("#resultado-reserva").should("have.class", "exito");
         cy.get("#codigo-reserva")
-            .first()
             .invoke("text")
             .then((codigo) => {
                 expect(codigo.trim()).to.match(/^SKY-[A-Z0-9]{6}$/);
@@ -47,37 +46,45 @@ describe("Flujo de reserva", () => {
         cy.get("#titulo-historial").should("be.visible");
         cy.get('[id^="reserva-panel-"]').should("have.length.at.least", 1);
         cy.get("@assignedId").then((assignedId) => {
-            cy.get('[id^="reserva-panel-"]').contains("span", String(assignedId)).should("be.visible")
+            cy.get('[id^="reserva-panel-"]').first().within(() => {
+                cy.get(".reserva-codigo").should("contain.text", String(assignedId))
+            })
+        })
+        cy.get('[id^="reserva-panel-"]').first().within(() => {
+            cy.get("mat-panel-description").should("contain.text", "PENDIENTE")
         })
     });
 
-    /**
-     * 2. Botón deshabilitado: en /reservar/1 sin seleccionar pasajeros, #btn-confirmar debe tener
-        el atributo disabled.
-     */
+    // Caso: 2
+    // Objetivo: Verificar que el botón de confirmar está deshabilitado cuando no hay pasajeros seleccionados.
+    // Datos de entrada: Ninguno (visitar /reservar/1 sin interactuar).
+    // Resultado esperado: #btn-confirmar tiene el atributo disabled.
     it("2 - Botón deshabilitado sin pasajeros seleccionados", () => {
         cy.visit("/reservar/1");
 
-        cy.contains("button", "Confirmar Reserva").should("be.disabled");
+        cy.get("#btn-confirmar").should("be.disabled");
     });
 
-    /**
-     * 3. Reserva con dos pasajeros: seleccionar pasajeros #1 (adulto) y #2 (niño), reservar SR1001 con la opción seguroViaje activada. El precio total mostrado debe ser mayor que
-        el doble del precio base del vuelo (porque se sumaron impuestos y opciones) y la
-        reserva debe aparecer en /reservas con dos pasajeros listados.
-     */
+    // Caso: 3
+    // Objetivo: Verificar reserva con dos pasajeros y seguro de viaje, comprobando precio total y aparición en historial.
+    // Datos de entrada: Vuelo SR1001, pasajeros #1 (adulto) y #2 (niño), seguroViaje activado.
+    // Resultado esperado: Precio total > doble del precio base, código de reserva visible, 2 pasajeros en historial.
     it("3 - Reserva con dos pasajeros y seguro de viaje", () => {
         cy.visit("/reservar/1");
 
-        cy.get(".pasajero-item").eq(0).click();
-        cy.get(".pasajero-item").eq(1).click();
+        cy.get("#pasajero-1").click();
+        cy.get("#pasajero-2").click();
         cy.get("#opcion-seguroViaje").click();
 
-        cy.contains("button", "Confirmar Reserva").click();
+        cy.get("#btn-confirmar").click();
 
-        cy.get(".resultado-card.exito").should("be.visible");
-        cy.get(".precio-row.total span")
-            .eq(1)
+        cy.get("#resultado-reserva").should("be.visible");
+        cy.get("#resultado-reserva").should("have.class", "exito");
+        cy.get("#codigo-reserva").invoke("text").then((codigo) => {
+            expect(codigo.trim()).to.match(/^SKY-[A-Z0-9]{6}$/);
+        });
+
+        cy.get("#precio-total")
             .invoke("text")
             .then((totalText) => {
                 const total = parseInt(totalText.replace(/[^0-9]/g, ""), 10);
@@ -85,86 +92,73 @@ describe("Flujo de reserva", () => {
                 expect(total).to.be.greaterThan(dobleBase);
             });
 
-        cy.get("#link-reservas").click()
-        cy.url().should("include", "/reservas")
+        navigateToReservas()
 
-        cy.get(".reserva-panel").first().click();
+        cy.get('[id^="reserva-panel-"]').first().click();
         cy.get(".pasajero-line").should("have.length", 2);
     });
 
-    /**
-     * 4. Infante con adulto: seleccionar pasajeros #1 (Carlos, adulto) y #4 (Sofía, infante) sobre
-        SR-1004 (San José → Bogotá, país destino CO). Carlos y Sofía aprueban la verificación
-        de documentos porque CR→CO y MX→CO entran por libre tránsito latinoamericano
-        (regla implementada en PasajeroService.verificarDocumentos: paisesLatam incluye CR
-        y MX, destinosLibresLatam incluye CO). La regla del adulto por infante se cumple con
-        un adulto y un infante. La reserva debe crearse y el código SKY-XXXXXX debe quedar
-        visible.
-     */
+    // Caso: 4
+    // Objetivo: Verificar que un infante puede reservarse junto con un adulto cumpliendo la regla de adulto/infante.
+    // Datos de entrada: Vuelo SR1004 (San José → Bogotá), pasajero #1 (Carlos, adulto) y #4 (Sofía, infante).
+    // Resultado esperado: Reserva creada exitosamente, código SKY-XXXXXX visible.
     it("4 - Infante con adulto: reserva válida SR1004 Carlos + Sofía", () => {
         cy.visit("/reservar/4");
 
-        cy.get(".pasajero-item").eq(0).click();
-        cy.get(".pasajero-item").eq(3).click();
+        cy.get("#pasajero-1").click();
+        cy.get("#pasajero-4").click();
 
-        cy.contains("button", "Confirmar Reserva").click();
+        cy.get("#btn-confirmar").click();
 
-        cy.get(".resultado-card.exito").should("be.visible");
-        cy.get(".resultado-exito strong")
-            .first()
+        cy.get("#resultado-reserva").should("be.visible");
+        cy.get("#resultado-reserva").should("have.class", "exito");
+        cy.get("#codigo-reserva")
             .invoke("text")
             .then((codigo) => {
                 expect(codigo.trim()).to.match(/^SKY-[A-Z0-9]{6}$/);
             });
     });
 
-    /**
-     * 5. Infante sin adulto: seleccionar únicamente al pasajero #4 (Sofía, infante) sobre SR-1004.
-        Sofía aprueba documentos por libre tránsito MX→CO, así que la validación que corta el
-        flujo es la de adulto/infante. El #msg-error debe contener el texto "al menos 1 adulto por
-        cada infante". Si se eligiera un destino donde Sofía requiera visa (por ejemplo SR-1001
-        a US), el error sería "Documentos insuficientes" y la prueba estaría midiendo otra regla;
-        por eso se usa SR-1004.
-     */
+    // Caso: 5
+    // Objetivo: Verificar que no se puede reservar un infante sin un adulto acompañante.
+    // Datos de entrada: Vuelo SR1004, únicamente pasajero #4 (Sofía, infante).
+    // Resultado esperado: Error visible con mensaje "al menos 1 adulto por cada infante".
     it("5 - Infante sin adulto: error de validación en SR1004", () => {
         cy.visit("/reservar/4");
 
-        cy.get(".pasajero-item").eq(3).click();
+        cy.get("#pasajero-4").click();
 
-        cy.contains("button", "Confirmar Reserva").click();
+        cy.get("#btn-confirmar").click();
 
-        cy.get(".resultado-card.error").should("be.visible");
+        cy.get("#resultado-reserva").should("be.visible");
+        cy.get("#resultado-reserva").should("have.class", "error");
         cy.get("#msg-error").should(
             "contain.text",
             "al menos 1 adulto por cada infante"
         );
     });
 
-    /**
-     * 6. Vuelo cancelado: visitar directamente /reservar/5 (SR-1005 cancelado). El detalle del
-        vuelo se renderiza igual y el formulario queda activo, porque ReservaComponent no
-        consulta el estado en ngOnInit; la validación se evalúa dentro de
-        ReservaService.crearReserva al confirmar. La prueba debe seleccionar a Carlos, hacer
-        clic en confirmar y aserar que #msg-error contiene "no está disponible". Capturar ese
-        error es lo que se considera éxito; no se acepta otro resultado.
-     */
+    // Caso: 6
+    // Objetivo: Verificar que no se puede reservar un vuelo cancelado.
+    // Datos de entrada: Vuelo SR1005 (cancelado), pasajero #1 (Carlos).
+    // Resultado esperado: Error visible con mensaje "no está disponible".
     it("6 - Vuelo cancelado: error al reservar SR1005", () => {
         cy.visit("/reservar/5");
 
-        cy.get(".vuelo-info-card").should("be.visible");
-        cy.get(".pasajero-item").first().click();
+        cy.get("#vuelo-info").should("be.visible");
+        cy.get("#pasajero-1").click();
 
-        cy.contains("button", "Confirmar Reserva").click();
+        cy.get("#btn-confirmar").click();
 
-        cy.get(".resultado-card.error").should("be.visible");
+        cy.get("#resultado-reserva").should("be.visible");
+        cy.get("#resultado-reserva").should("have.class", "error");
         cy.get("#msg-error").should("contain.text", "no está disponible");
     });
 
-    /**
-     * 7. Vuelo inexistente: visitar /reservar/9999. La pantalla debe mostrar "Vuelo no
-        encontrado." y un botón que regresa a /buscar; el formulario de selección de pasajeros
-        NO debe renderizarse.
-     */
+    // Caso: 7
+    // Objetivo: Verificar que se muestra mensaje de error al intentar reservar un vuelo inexistente.
+    // Datos de entrada: ID de vuelo 9999 (inexistente).
+    // Resultado esperado: Mensaje "Vuelo no encontrado.", botón de regreso visible, formulario de pasajeros no renderizado.
     it("7 - Vuelo inexistente: mensaje de error y botón de regreso", () => {
         cy.visit("/reservar/9999");
 
