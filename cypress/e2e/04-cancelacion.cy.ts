@@ -86,7 +86,8 @@ describe("Estados de la reserva", () => {
                     cy.get(`#monto-reembolso-${bookingId}`).should("be.visible")
 
                     cy.get(`#monto-reembolso-${bookingId}`).invoke("text").then((text) => {
-                        const monto = parseFloat(text.replace(/[^0-9.]/g, ""))
+                        const match = text.match(/\$([0-9.]+)/)
+                        const monto = match ? parseFloat(match[1]) : 0
                         cy.log(monto.toString())
                         cy.log(text, " ", monto)
                         expect(text).to.include("(100%)")
@@ -154,7 +155,8 @@ describe("Estados de la reserva", () => {
                     const reembolsoEsperado = Math.round(precioTotal * 0.80 * 100) / 100
                     cy.get(`#monto-reembolso-${reservaId}`).should("be.visible")
                     cy.get(`#monto-reembolso-${reservaId}`).invoke("text").then((text) => {
-                        const monto = parseFloat(text.replace(/[^0-9.]/g, ""))
+                        const match = text.match(/\$([0-9.]+)/)
+                        const monto = match ? parseFloat(match[1]) : 0
                         expect(monto).to.equal(reembolsoEsperado)
                         expect(text).to.include("(80%)")
                     })
@@ -192,7 +194,8 @@ describe("Estados de la reserva", () => {
                     const reembolsoEsperado = Math.round(precioTotal * 0.50 * 100) / 100
                     cy.get(`#monto-reembolso-${reservaId}`).should("be.visible")
                     cy.get(`#monto-reembolso-${reservaId}`).invoke("text").then((text) => {
-                        const monto = parseFloat(text.replace(/[^0-9.]/g, ""))
+                        const match = text.match(/\$([0-9.]+)/)
+                        const monto = match ? parseFloat(match[1]) : 0
                         expect(monto).to.equal(reembolsoEsperado)
                         expect(text).to.include("(50%)")
                     })
@@ -228,7 +231,8 @@ describe("Estados de la reserva", () => {
 
                 cy.get(`#monto-reembolso-${reservaId}`).should("be.visible")
                 cy.get(`#monto-reembolso-${reservaId}`).invoke("text").then((text) => {
-                    const monto = parseFloat(text.replace(/[^0-9.]/g, ""))
+                    const match = text.match(/\$([0-9.]+)/)
+                    const monto = match ? parseFloat(match[1]) : 0
                     expect(monto).to.equal(0)
                     expect(text).to.include("(0%)")
                 })
